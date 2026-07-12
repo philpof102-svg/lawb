@@ -41,6 +41,10 @@ const STATE_DIR = path.join(ROOT, 'state');
 const STATE_FILE = path.join(STATE_DIR, 'last-snapshot.json');
 const LOCK_FILE = path.join(STATE_DIR, 'bridge.lock');
 const MIRROR_REPO_NAME = 'lawb-mirror';
+const DESCRIPTOR_FILE = path.join(ROOT, 'LAWB-MIRROR-DESCRIPTOR.json');
+const LOCK_TTL_MS = 6 * 60 * 60 * 1000; // 6h — if older, treat as stale and steal it
+const FETCH_TIMEOUT_MS = 15_000;
+const MAX_BACKOFF_S = 30 * 60; // cap the exponential backoff at 30 min
 
 const args = (() => {
   const out = { dryRun: true, apply: false, once: false, interval: 60, ca: null, glPath: 'gl' };
@@ -53,6 +57,13 @@ const args = (() => {
     else if (a[i] === '--ca' && a[i + 1]) out.ca = a[++i];
     else if (a[i] === '--gl' && a[i + 1]) out.glPath = a[++i];
   }
+  // If no --ca given, fall back to the descriptor's `deployedCA` (single source of truth).
+  if (!out.ca) {
+    const d = readJSON(DESCRIPTOR_FILE);
+    if (d && typeof d.deployedCA === 'string' && /^0x[0-9a-fA-F]{40}$/.test(d.deployedCA)) {
+      out.ca = d.deployedCA;
+    }
+  }
   return out;
 })();
 
@@ -62,13 +73,27 @@ function writeJSON(f, v) { fs.writeFileSync(f, JSON.stringify(v, null, 2)); }
 function nowISO() { return new Date().toISOString(); }
 function sha(o) { return crypto.createHash('sha256').update(JSON.stringify(o)).digest('hex').slice(0, 16); }
 
-/** Cheap PID-based lock so two loops don't race. */
+/** Cheap PID-based lock so two loops don't race. A stale lock (>LOCK_TTL_MS) is
+ *  stolen (the previous instance is presumed dead). */
 function acquireLock() {
   ensureDir(STATE_DIR);
   if (fs.existsSync(LOCK_FILE)) {
-    const old = JSON.parse(fs.readFileSync(LOCK_FILE, 'utf8'));
-    if (old.pid && old.pid !== process.pid) {
-      try { process.kill(old.pid, 0); return { ok: false, reason: 'another bridge is running (pid ' + old.pid + ')' }; } catch { /* stale */ }
+    let old = null;
+    try { old = JSON.parse(fs.readFileSync(LOCK_FILE, 'utf8')); } catch {}
+    if (old) {
+      // PID-alive short-circuit
+      if (old.pid && old.pid !== process.pid) {
+        try { process.kill(old.pid, 0); return { ok: false, reason: 'another bridge is running (pid ' + old.pid + ')' }; } catch { /* stale PID */ }
+      }
+      // TTL-based short-circuit
+      if (old.started) {
+        const age = Date.now() - Date.parse(old.started);
+        if (Number.isFinite(age) && age > LOCK_TTL_MS) {
+          console.warn('[' + nowISO() + '] stealing stale lock (age ' + Math.round(age / 60000) + ' min)');
+        } else {
+          return { ok: false, reason: 'lock is recent (' + Math.round((LOCK_TTL_MS - age) / 60000) + ' min remaining); refusing to steal' };
+        }
+      }
     }
   }
   writeJSON(LOCK_FILE, { pid: process.pid, started: nowISO() });
@@ -81,8 +106,10 @@ async function fetchB20Snapshot(ca) {
   // Public read-only probe via Basescan. We do NOT require a key for the
   // free tier — but if the rate limit hits, the next tick will retry.
   const url = `https://api.basescan.org/api?module=token&action=tokeninfo&contractaddress=${ca}`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
-    const r = await fetch(url, { headers: { 'user-agent': 'lawb-mirror-bridge/1.0' } });
+    const r = await fetch(url, { headers: { 'user-agent': 'lawb-mirror-bridge/1.0' }, signal: ctrl.signal });
     if (!r.ok) return null;
     const j = await r.json();
     if (j.status !== '1' || !j.result) return null;
@@ -96,6 +123,13 @@ async function fetchB20Snapshot(ca) {
       fetchedAt: nowISO(),
     };
   } catch { return null; }
+  finally { clearTimeout(timer); }
+}
+
+/** Capped exponential backoff (seconds) for failure N (N>=1). */
+function backoffSeconds(failures) {
+  const n = Math.max(1, Math.min(failures, 8));
+  return Math.min(MAX_BACKOFF_S, Math.round(Math.pow(2, n - 1) * 5));
 }
 
 /** Compare two snapshots, return the diff (empty object if no change). */
@@ -120,17 +154,22 @@ function runGlMirror(githubUrl, description) {
 
 async function tick(state) {
   if (!args.ca) {
-    console.error('[' + nowISO() + '] no --ca given. pass the deployed mirror CA. (b20 contract address on Base.)');
+    console.error('[' + nowISO() + '] no --ca given and no `deployedCA` in LAWB-MIRROR-DESCRIPTOR.json. pass the deployed mirror CA, or add it to the descriptor.');
+    state.failures = (state.failures || 0) + 1;
+    state.lastErrorAt = nowISO();
     return { skipped: true };
   }
   const snap = await fetchB20Snapshot(args.ca);
   if (!snap) {
     state.failures = (state.failures || 0) + 1;
     state.lastErrorAt = nowISO();
-    console.error('[' + nowISO() + '] fetch failed (failure #' + state.failures + ') — will retry next tick');
+    const wait = backoffSeconds(state.failures);
+    console.error('[' + nowISO() + '] fetch failed (failure #' + state.failures + ') — will retry in ' + wait + 's');
+    state.nextBackoffS = wait;
     return { skipped: true };
   }
   state.failures = 0;
+  state.nextBackoffS = 0;
   state.lastSuccessAt = nowISO();
   const prev = state.lastSnapshot;
   const d = diff(prev, snap);
@@ -161,12 +200,24 @@ async function tick(state) {
 
 async function main() {
   if (args.selftest || process.argv.includes('--selftest')) {
+    // Scan the source for forbidden signer surfaces. The previous check
+    // looked at `module.exports` (always empty for this script) and would
+    // have missed a tx-broadcast call baked in by hand.
+    let src = '';
+    try { src = fs.readFileSync(__filename, 'utf8'); } catch {}
+    // Strip line and block comments so the check doesn't false-positive on its own docstring.
+    const stripped = src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const forbiddenHits = (stripped.match(/web3\.eth\.(?:sendTransaction|sendRawTransaction)|ethers\.Wallet\(|privateKey\s*[:=]/gi) || []);
+    const gitignore = (() => { try { return fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8'); } catch { return ''; } })();
     const checks = [
       ['args parsed', typeof args.interval === 'number' && args.interval >= 5],
       ['--dry-run is default', args.dryRun === true && args.apply === false],
-      ['no signer surface in this file',
-        !Object.keys(module.exports || {}).some((k) => /sign|send|deploy|broadcast/i.test(k))],
-      ['lock dir is .gitignore-able', /state/.test(STATE_DIR.replace(/\\/g, '/'))],
+      ['no signer surface in this file', forbiddenHits.length === 0],
+      ['state/ is git-ignored', /^\s*state\/?\s*$/m.test(gitignore) || /^\s*state\//m.test(gitignore)],
+      ['lock dir is under state/', /state/.test(STATE_DIR.replace(/\\/g, '/'))],
+      ['backoff helper exists', typeof backoffSeconds === 'function'],
     ];
     let pass = 0; for (const [n, ok] of checks) { console.log(ok ? 'PASS' : 'FAIL', '·', n); if (ok) pass++; }
     console.log('\n' + pass + '/' + checks.length + ' checks passed');
@@ -184,7 +235,10 @@ async function main() {
   do {
     try { await tick(state); } catch (e) { console.error('[' + nowISO() + '] tick error: ' + (e && e.message || e)); state.failures = (state.failures || 0) + 1; }
     writeJSON(STATE_FILE, state);
-    if (!args.once) await new Promise((r) => setTimeout(r, args.interval * 1000));
+    if (!args.once) {
+      const wait = (state.nextBackoffS && state.nextBackoffS > 0) ? state.nextBackoffS : args.interval;
+      await new Promise((r) => setTimeout(r, wait * 1000));
+    }
   } while (!args.once);
   releaseLock();
 }
