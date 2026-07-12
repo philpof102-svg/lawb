@@ -12,3 +12,6 @@ state/
 *.pem
 *.key
 .env.local
+
+# local agent/tool cache — never commit
+.claude/

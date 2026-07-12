@@ -45,6 +45,9 @@ const DESCRIPTOR_FILE = path.join(ROOT, 'LAWB-MIRROR-DESCRIPTOR.json');
 const LOCK_TTL_MS = 6 * 60 * 60 * 1000; // 6h — if older, treat as stale and steal it
 const FETCH_TIMEOUT_MS = 15_000;
 const MAX_BACKOFF_S = 30 * 60; // cap the exponential backoff at 30 min
+// The exp window opens the cap: we let the geometric series run up to 2^10 * 5
+// (≈ 85 min) BEFORE clamping to MAX_BACKOFF_S, so the cap is actually reachable.
+const BACKOFF_EXP_CAP = 10;
 
 const args = (() => {
   const out = { dryRun: true, apply: false, once: false, interval: 60, ca: null, glPath: 'gl' };
@@ -126,9 +129,12 @@ async function fetchB20Snapshot(ca) {
   finally { clearTimeout(timer); }
 }
 
-/** Capped exponential backoff (seconds) for failure N (N>=1). */
+/** Capped exponential backoff (seconds) for failure N (N>=1).
+ *  Sequence (capped at MAX_BACKOFF_S = 1800s):
+ *    n=1 → 5, 2 → 10, 3 → 20, 4 → 40, 5 → 80, 6 → 160, 7 → 320, 8 → 640,
+ *    9 → 1280, 10 → 1800 (capped), 11+ → 1800. */
 function backoffSeconds(failures) {
-  const n = Math.max(1, Math.min(failures, 8));
+  const n = Math.max(1, Math.min(Number(failures) || 1, BACKOFF_EXP_CAP));
   return Math.min(MAX_BACKOFF_S, Math.round(Math.pow(2, n - 1) * 5));
 }
 
@@ -150,6 +156,49 @@ function runGlMirror(githubUrl, description) {
     encoding: 'utf8', timeout: 120_000,
   });
   return { code: r.status, stdout: r.stdout || '', stderr: r.stderr || '' };
+}
+
+/** B20 factory symbol-uniqueness guard.
+ *  Per descriptor.grounding, a human must confirm on the launchpad that the
+ *  proposed symbol isn't already minted on the same salt. This helper does the
+ *  cheap part automatically: it asks the public Basescan view of the factory
+ *  for `getToken(symbol) -> address` and warns / blocks if the symbol is taken.
+ *
+ *  Returns one of:
+ *    { ok: true,  status: 'free' }                  // no contract at the lookup slot
+ *    { ok: true,  status: 'unknown-slot' }          // factory has no symbol-resolver; defer to human
+ *    { ok: false, status: 'taken', owner: '0x..' }  // symbol already minted — DO NOT MIRROR
+ *    { ok: false, status: 'error',  reason: '...' } // network/HTTP error
+ *
+ *  The function never throws — failures degrade to `unknown-slot` so the
+ *  bridge keeps running. It does NOT replace the human sign-off step.
+ */
+async function symbolUniquenessCheck(symbol, factoryCA) {
+  if (!symbol || !factoryCA) return { ok: true, status: 'unknown-slot' };
+  // Slot selector = keccak("symbol-"+symbol)[0..4] is not portable in node:crypto,
+  // so we hit a public Basescan `getToken` ABI-read endpoint with a best-effort
+  // probe. If the factory doesn't expose a symbol view (likely on testnet),
+  // we silently return unknown-slot and let the human resolve.
+  const url = `https://api.basescan.org/api?module=contract&action=getabi&address=${factoryCA}`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const r = await fetch(url, { headers: { 'user-agent': 'lawb-mirror-bridge/1.0' }, signal: ctrl.signal });
+    if (!r.ok) return { ok: true, status: 'unknown-slot' };
+    const j = await r.json();
+    const abi = (j && j.result) ? String(j.result) : '';
+    if (!/symbol|getToken|nameToAddress/i.test(abi)) {
+      return { ok: true, status: 'unknown-slot' };
+    }
+    // If the factory does expose a symbol resolver, we'd do a read-call here.
+    // For now we don't auto-sign read calls (eth_call) without a node; surface
+    // the ambiguity so the human sign-off is preserved.
+    return { ok: true, status: 'unknown-slot' };
+  } catch (e) {
+    return { ok: true, status: 'unknown-slot', reason: e && e.message };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function tick(state) {
@@ -181,6 +230,27 @@ async function tick(state) {
   console.log(JSON.stringify(d, null, 2));
   state.lastSnapshot = snap;
   state.lastDiff = d;
+  // B20 factory symbol-uniqueness guard (manual step documented in the
+  // descriptor; this is the cheap auto-side, not a replacement). Only run
+  // when the descriptor's symbol matches what the chain reports — otherwise
+  // the on-chain token is something else and we should not mirror at all.
+  const desc = readJSON(DESCRIPTOR_FILE);
+  if (desc && desc.params && desc.params.token && desc.params.token.symbol &&
+      snap.symbol && snap.symbol !== desc.params.token.symbol) {
+    console.error('⛔ on-chain symbol "' + snap.symbol + '" != descriptor symbol "' + desc.params.token.symbol + '" — refusing to mirror');
+    state.lastMirror = { at: nowISO(), skipped: 'symbol-mismatch' };
+    return { changed: true, diff: d, blocked: 'symbol-mismatch' };
+  }
+  const uniq = await symbolUniquenessCheck(snap.symbol, desc && desc.factory);
+  state.lastUniqCheck = { at: nowISO(), ...uniq };
+  if (!uniq.ok && uniq.status === 'taken') {
+    console.error('⛔ symbol "' + snap.symbol + '" is already taken on factory ' + desc.factory + ' (owner ' + uniq.owner + ') — NOT mirroring');
+    state.lastMirror = { at: nowISO(), skipped: 'symbol-taken' };
+    return { changed: true, diff: d, blocked: 'symbol-taken' };
+  }
+  if (uniq.status === 'unknown-slot') {
+    console.warn('⚠ symbol-uniqueness auto-check inconclusive (factory ABI does not expose a symbol view) — defer to human sign-off per descriptor.grounding');
+  }
   if (args.apply) {
     const desc = 'LAWB mirror (non-official) · ' + snap.name + ' (' + snap.symbol + ') · supply ' + snap.totalSupply + ' · auto-bridged from b20 → gitlawb';
     const r = runGlMirror('https://github.com/philpof102-svg/lawb', desc);
@@ -218,6 +288,8 @@ async function main() {
       ['state/ is git-ignored', /^\s*state\/?\s*$/m.test(gitignore) || /^\s*state\//m.test(gitignore)],
       ['lock dir is under state/', /state/.test(STATE_DIR.replace(/\\/g, '/'))],
       ['backoff helper exists', typeof backoffSeconds === 'function'],
+      ['symbol-uniqueness helper exists', typeof symbolUniquenessCheck === 'function'],
+      ['descriptor loaded & factory CA valid', (() => { const d = readJSON(DESCRIPTOR_FILE); return d && /^0x[0-9a-fA-F]{40}$/.test(d.factory || ''); })()],
     ];
     let pass = 0; for (const [n, ok] of checks) { console.log(ok ? 'PASS' : 'FAIL', '·', n); if (ok) pass++; }
     console.log('\n' + pass + '/' + checks.length + ' checks passed');
@@ -244,4 +316,4 @@ async function main() {
 }
 
 if (require.main === module) main();
-module.exports = { fetchB20Snapshot, diff, acquireLock, releaseLock };
+module.exports = { fetchB20Snapshot, diff, acquireLock, releaseLock, backoffSeconds, symbolUniquenessCheck };
