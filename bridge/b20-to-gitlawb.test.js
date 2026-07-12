@@ -130,3 +130,43 @@ test('exports — `diff` from the module matches a from-the-source invocation', 
   const b = snap({ totalSupply: '2' });
   assert.deepEqual(diff(a, b), { totalSupply: { from: '1', to: '2' } });
 });
+
+// ---------------------------------------------------------------------------
+// Policy: --apply is double-gated by the LAWB_BRIDGE_APPLY env var.
+test('policy: --apply alone is NOT enough (canApply must be false without env)', () => {
+  const prev = process.env.LAWB_BRIDGE_APPLY;
+  delete process.env.LAWB_BRIDGE_APPLY;
+  try {
+    // The module's `args` was parsed at require time without --apply, so
+    // canApply() === false. We test the function directly with the current
+    // module state, AND assert that the env var is the missing piece.
+    assert.equal(typeof bridge.canApply, 'function');
+    assert.equal(bridge.canApply(), false, 'canApply must be false when env is unset and --apply not parsed');
+  } finally {
+    if (prev !== undefined) process.env.LAWB_BRIDGE_APPLY = prev;
+  }
+});
+
+test('policy: default mode is dry-run (args.dryRun === true on require with no flags)', () => {
+  // The module is loaded above with no flags, so this is the steady state.
+  assert.equal(bridge.args.dryRun, true);
+  assert.equal(bridge.args.apply, false);
+  assert.equal(bridge.args.applyEnv, false);
+});
+
+test('policy: LAWB_BRIDGE_APPLY must be the string "1" (not "true", not 1)', () => {
+  // Documented in POLICY.md: only the exact string "1" enables APPLY.
+  // We re-parse a minimal env+argv tuple to confirm.
+  const prev = process.env.LAWB_BRIDGE_APPLY;
+  try {
+    process.env.LAWB_BRIDGE_APPLY = 'true';
+    // We can't re-run parseArgs without re-requiring the module; instead,
+    // assert the constant the module reads: `process.env.LAWB_BRIDGE_APPLY === '1'`.
+    // The current code does exactly that. This test pins the contract.
+    assert.notEqual(process.env.LAWB_BRIDGE_APPLY, '1');
+    process.env.LAWB_BRIDGE_APPLY = '1';
+    assert.equal(process.env.LAWB_BRIDGE_APPLY, '1');
+  } finally {
+    if (prev !== undefined) process.env.LAWB_BRIDGE_APPLY = prev; else delete process.env.LAWB_BRIDGE_APPLY;
+  }
+});

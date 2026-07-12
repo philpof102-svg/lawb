@@ -50,7 +50,7 @@ const MAX_BACKOFF_S = 30 * 60; // cap the exponential backoff at 30 min
 const BACKOFF_EXP_CAP = 10;
 
 const args = (() => {
-  const out = { dryRun: true, apply: false, once: false, interval: 60, ca: null, glPath: 'gl' };
+  const out = { dryRun: true, apply: false, once: false, interval: 60, ca: null, glPath: 'gl', applyEnv: false };
   const a = process.argv.slice(2);
   for (let i = 0; i < a.length; i++) {
     if (a[i] === '--dry-run') out.dryRun = true;
@@ -60,6 +60,9 @@ const args = (() => {
     else if (a[i] === '--ca' && a[i + 1]) out.ca = a[++i];
     else if (a[i] === '--gl' && a[i + 1]) out.glPath = a[++i];
   }
+  // Double-gate: --apply is only honored if the env var is also set.
+  // See bridge/POLICY.md for the rationale.
+  out.applyEnv = process.env.LAWB_BRIDGE_APPLY === '1';
   // If no --ca given, fall back to the descriptor's `deployedCA` (single source of truth).
   if (!out.ca) {
     const d = readJSON(DESCRIPTOR_FILE);
@@ -69,6 +72,11 @@ const args = (() => {
   }
   return out;
 })();
+
+/** True iff the bridge should actually call `gl mirror` on a change.
+ *  --apply is required AND the LAWB_BRIDGE_APPLY=1 env var is required.
+ *  Either alone degrades to dry-run (with a warning). */
+function canApply() { return args.apply && args.applyEnv; }
 
 function ensureDir(d) { try { fs.mkdirSync(d, { recursive: true }); } catch {} }
 function readJSON(f) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return null; } }
@@ -251,7 +259,7 @@ async function tick(state) {
   if (uniq.status === 'unknown-slot') {
     console.warn('⚠ symbol-uniqueness auto-check inconclusive (factory ABI does not expose a symbol view) — defer to human sign-off per descriptor.grounding');
   }
-  if (args.apply) {
+  if (canApply()) {
     const desc = 'LAWB mirror (non-official) · ' + snap.name + ' (' + snap.symbol + ') · supply ' + snap.totalSupply + ' · auto-bridged from b20 → gitlawb';
     const r = runGlMirror('https://github.com/philpof102-svg/lawb', desc);
     state.lastMirror = { at: nowISO(), ...r };
@@ -262,8 +270,11 @@ async function tick(state) {
       console.error('\n⛔ gitlawb requires a human iCaptcha proof. Bridge exiting; solve it once with `gl quickstart`, then re-run.');
       process.exit(2);
     }
+  } else if (args.apply && !args.applyEnv) {
+    console.warn('  --apply was set but LAWB_BRIDGE_APPLY!=1 — degrading to DRY-RUN (see bridge/POLICY.md)');
+    console.log('  (dry-run: would invoke `gl mirror` — set LAWB_BRIDGE_APPLY=1 to actually mirror)');
   } else {
-    console.log('  (dry-run: would invoke `gl mirror` — re-run with --apply to actually mirror)');
+    console.log('  (dry-run: would invoke `gl mirror` — re-run with --apply + LAWB_BRIDGE_APPLY=1 to actually mirror)');
   }
   return { changed: true, diff: d };
 }
@@ -284,6 +295,7 @@ async function main() {
     const checks = [
       ['args parsed', typeof args.interval === 'number' && args.interval >= 5],
       ['--dry-run is default', args.dryRun === true && args.apply === false],
+      ['--apply is double-gated by LAWB_BRIDGE_APPLY=1', typeof canApply === 'function' && canApply() === false && (process.env.LAWB_BRIDGE_APPLY !== '1')],
       ['no signer surface in this file', forbiddenHits.length === 0],
       ['state/ is git-ignored', /^\s*state\/?\s*$/m.test(gitignore) || /^\s*state\//m.test(gitignore)],
       ['lock dir is under state/', /state/.test(STATE_DIR.replace(/\\/g, '/'))],
@@ -316,4 +328,4 @@ async function main() {
 }
 
 if (require.main === module) main();
-module.exports = { fetchB20Snapshot, diff, acquireLock, releaseLock, backoffSeconds, symbolUniquenessCheck };
+module.exports = { fetchB20Snapshot, diff, acquireLock, releaseLock, backoffSeconds, symbolUniquenessCheck, canApply, args };
