@@ -1,0 +1,11 @@
+LAWB poses — the typeable kit (monospace, CC0)
+
+{°·°}    idle      watching your build
+{>·<}    pinch     bug caught
+{-·-}    exit 0    at peace — build passed
+{ !!! }  panic     merge conflict
+{~·~}    molting   release day — do not disturb
+{°·°}c   coffee    it is 3am and the tests are green
+
+usage: anywhere text goes — tweets, READMEs, commit messages, MOTDs.
+example commit:  fix(parser): stop eating trailing commas {>·<}

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="420" viewBox="0 0 460 420">
+  <title>LAWB — the gitlawb official meme (black and white)</title>
+  <rect width="460" height="420" fill="#000000"/>
+  <line x1="0" y1="36" x2="460" y2="36" stroke="#333333" stroke-width="1"/>
+  <text x="20" y="24" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="12" fill="#888888">~/gitlawb $ lawb</text>
+
+  <text x="20" y="64" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#ffffff">$ git clone lawb</text>
+  <text x="20" y="84" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#888888">&gt; born in the shell.</text>
+
+  <text x="76" y="222" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="68" fill="#ffffff">{</text>
+  <text x="280" y="222" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="68" fill="#ffffff">}</text>
+
+  <g fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="174" y1="136" x2="158" y2="112"/>
+    <line x1="206" y1="136" x2="222" y2="112"/>
+    <circle cx="158" cy="109" r="3" fill="#ffffff" stroke="none"/>
+    <circle cx="222" cy="109" r="3" fill="#ffffff" stroke="none"/>
+    <rect x="114" y="156" width="32" height="28" rx="10"/>
+    <rect x="108" y="148" width="20" height="16" rx="7"/>
+    <rect x="234" y="156" width="32" height="28" rx="10"/>
+    <rect x="252" y="148" width="20" height="16" rx="7"/>
+    <line x1="146" y1="172" x2="160" y2="172"/>
+    <line x1="234" y1="172" x2="220" y2="172"/>
+    <rect x="160" y="140" width="60" height="72" rx="20"/>
+    <line x1="168" y1="164" x2="212" y2="164"/>
+    <line x1="168" y1="180" x2="212" y2="180"/>
+    <line x1="168" y1="196" x2="212" y2="196"/>
+    <rect x="172" y="146" width="12" height="14" rx="3"/>
+    <rect x="196" y="146" width="12" height="14" rx="3"/>
+    <rect x="175" y="150" width="4" height="6" fill="#ffffff" stroke="none"/>
+    <rect x="199" y="150" width="4" height="6" fill="#ffffff" stroke="none"/>
+    <path d="M174 212 h32 M180 224 h20 M172 236 h14 M194 236 h14"/>
+  </g>
+
+  <text x="20" y="300" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#ffffff">$ lawb --pinch bug.js</text>
+  <text x="20" y="320" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#888888">exit 0</text>
+  <rect x="20" y="332" width="9" height="16" fill="#ffffff"/>
+
+  <text x="20" y="386" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="22" fill="#ffffff">LAWB {°·°}</text>
+  <text x="20" y="406" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="12" fill="#888888">the gitlawb official meme · b&amp;w · CC0</text>
+</svg>
