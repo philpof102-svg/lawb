@@ -1,7 +1,7 @@
-# LAWB `{°·°}`
+# LAWB `{>·<}`
 
 **The gitlawb official meme.** It was hiding in the name the whole time: git·**lawb** — a lobster.
-Born in the shell.
+Born from dust to zero.
 
 ```
 $ git clone lawb

@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="460" height="530" viewBox="0 0 460 530">
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="460" viewBox="0 0 460 460">
   <title>LAWB — the glyph made flesh: {°·°} peeking over your terminal</title>
-  <rect width="460" height="530" fill="#000000"/>
+  <rect width="460" height="460" fill="#000000"/>
 
   <g fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
     <path d="M210,120 C198,92 176,66 140,52"/>
@@ -37,31 +37,19 @@
     <line x1="72" y1="320" x2="388" y2="320"/>
     <line x1="72" y1="332" x2="388" y2="332"/>
     <line x1="72" y1="344" x2="388" y2="344"/>
-    <line x1="72" y1="356" x2="388" y2="356"/>
-    <line x1="72" y1="368" x2="388" y2="368"/>
-    <line x1="72" y1="380" x2="388" y2="380"/>
-    <line x1="72" y1="392" x2="388" y2="392"/>
-    <line x1="72" y1="404" x2="388" y2="404"/>
-    <line x1="72" y1="416" x2="388" y2="416"/>
   </g>
 
   <g fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round">
-    <path d="M70,196 L70,418 Q70,428 80,428 L380,428 Q390,428 390,418 L390,196"/>
+    <path d="M70,196 L70,342 Q70,352 80,352 L380,352 Q390,352 390,342 L390,196"/>
     <line x1="70" y1="196" x2="106" y2="196"/>
     <line x1="166" y1="196" x2="186" y2="196"/>
     <line x1="274" y1="196" x2="294" y2="196"/>
     <line x1="354" y1="196" x2="390" y2="196"/>
   </g>
 
-  <text x="90" y="240" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13.5" fill="#ffffff">$ gl clone gitlawb://lawb</text>
-  <text x="90" y="262" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13.5" fill="#888888">&gt; born in the shell.</text>
-  <text x="90" y="296" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13.5" fill="#ffffff">$ zero fix parser.js</text>
-  <text x="90" y="318" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13.5" fill="#888888">{&gt;·&lt;} bug pinched · exit 0</text>
-  <text x="90" y="352" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13.5" fill="#ffffff">$ gl push</text>
-  <text x="90" y="374" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13.5" fill="#888888">&gt; molt archived · shell is yours</text>
-  <text x="90" y="406" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13.5" fill="#ffffff">$</text>
-  <rect x="104" y="394" width="10" height="15" fill="#ffffff"/>
+  <text x="90" y="246" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="14" fill="#ffffff">$</text>
+  <rect x="105" y="233" width="10" height="16" fill="#ffffff"/>
 
-  <text x="230" y="478" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="40" fill="#ffffff">LAWB {°·°}</text>
-  <text x="230" y="504" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="12.5" fill="#888888">the gitlawb official meme · born in the shell · CC0</text>
+  <text x="230" y="404" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="40" fill="#ffffff">LAWB {&gt;·&lt;}</text>
+  <text x="230" y="430" text-anchor="middle" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="12.5" fill="#888888">the gitlawb official meme · born from dust to zero · CC0</text>
 </svg>
