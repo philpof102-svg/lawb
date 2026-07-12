@@ -1,41 +1,61 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="460" height="420" viewBox="0 0 460 420">
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="470" viewBox="0 0 460 470">
   <title>LAWB — the gitlawb official meme (black and white)</title>
-  <rect width="460" height="420" fill="#000000"/>
+  <rect width="460" height="470" fill="#000000"/>
   <line x1="0" y1="36" x2="460" y2="36" stroke="#333333" stroke-width="1"/>
   <text x="20" y="24" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="12" fill="#888888">~/gitlawb $ lawb</text>
 
   <text x="20" y="64" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#ffffff">$ git clone lawb</text>
   <text x="20" y="84" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#888888">&gt; born in the shell.</text>
 
-  <text x="76" y="222" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="68" fill="#ffffff">{</text>
-  <text x="280" y="222" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="68" fill="#ffffff">}</text>
+  <g transform="translate(0,16)">
+  <g fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M218,146 C208,128 190,112 164,106"/>
+    <path d="M242,146 C252,128 270,112 296,106"/>
+    <line x1="218" y1="150" x2="211" y2="135"/>
+    <line x1="242" y1="150" x2="249" y2="135"/>
+    <circle cx="209" cy="130" r="5" fill="#ffffff" stroke="none"/>
+    <circle cx="251" cy="130" r="5" fill="#ffffff" stroke="none"/>
 
-  <g fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="174" y1="136" x2="158" y2="112"/>
-    <line x1="206" y1="136" x2="222" y2="112"/>
-    <circle cx="158" cy="109" r="3" fill="#ffffff" stroke="none"/>
-    <circle cx="222" cy="109" r="3" fill="#ffffff" stroke="none"/>
-    <rect x="114" y="156" width="32" height="28" rx="10"/>
-    <rect x="108" y="148" width="20" height="16" rx="7"/>
-    <rect x="234" y="156" width="32" height="28" rx="10"/>
-    <rect x="252" y="148" width="20" height="16" rx="7"/>
-    <line x1="146" y1="172" x2="160" y2="172"/>
-    <line x1="234" y1="172" x2="220" y2="172"/>
-    <rect x="160" y="140" width="60" height="72" rx="20"/>
-    <line x1="168" y1="164" x2="212" y2="164"/>
-    <line x1="168" y1="180" x2="212" y2="180"/>
-    <line x1="168" y1="196" x2="212" y2="196"/>
-    <rect x="172" y="146" width="12" height="14" rx="3"/>
-    <rect x="196" y="146" width="12" height="14" rx="3"/>
-    <rect x="175" y="150" width="4" height="6" fill="#ffffff" stroke="none"/>
-    <rect x="199" y="150" width="4" height="6" fill="#ffffff" stroke="none"/>
-    <path d="M174 212 h32 M180 224 h20 M172 236 h14 M194 236 h14"/>
+    <path d="M222,152 L230,138 L238,152"/>
+    <ellipse cx="230" cy="198" rx="36" ry="48"/>
+    <path d="M206,168 Q230,178 254,168"/>
+    <path d="M200,196 Q230,206 260,196"/>
+    <path d="M206,226 Q230,234 254,226"/>
+
+    <path d="M198,176 L170,158 L152,142"/>
+    <path d="M152,142 C128,148 106,134 102,112 C99,94 112,80 130,80 C142,80 150,88 152,98"/>
+    <path d="M152,142 C142,130 138,118 142,106"/>
+
+    <path d="M262,176 L290,158 L308,142"/>
+    <path d="M308,142 C332,148 354,134 358,112 C361,94 348,80 330,80 C318,80 310,88 308,98"/>
+    <path d="M308,142 C318,130 322,118 318,106"/>
+
+    <path d="M198,206 L170,212 L156,224"/>
+    <path d="M202,220 L178,232 L166,246"/>
+    <path d="M206,232 L186,248 L178,262"/>
+    <path d="M262,206 L290,212 L304,224"/>
+    <path d="M258,220 L282,232 L294,246"/>
+    <path d="M254,232 L274,248 L282,262"/>
+
+    <path d="M206,242 C208,268 214,288 220,302"/>
+    <path d="M254,242 C252,268 246,288 240,302"/>
+    <path d="M208,260 Q230,270 252,260"/>
+    <path d="M212,278 Q230,286 248,278"/>
+    <path d="M216,294 Q230,300 244,294"/>
+
+    <path d="M230,302 L230,330"/>
+    <path d="M224,300 C218,314 212,322 202,328"/>
+    <path d="M236,300 C242,314 248,322 258,328"/>
+    <path d="M220,296 C208,306 198,312 188,314"/>
+    <path d="M240,296 C252,306 262,312 272,314"/>
+  </g>
   </g>
 
-  <text x="20" y="300" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#ffffff">$ lawb --pinch bug.js</text>
-  <text x="20" y="320" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#888888">exit 0</text>
-  <rect x="20" y="332" width="9" height="16" fill="#ffffff"/>
+  <text x="20" y="384" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#ffffff">$ lawb --pinch bug.js</text>
+  <text x="20" y="404" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="13" fill="#888888">exit 0</text>
+  <rect x="20" y="416" width="9" height="16" fill="#ffffff"/>
 
-  <text x="20" y="386" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="22" fill="#ffffff">LAWB {°·°}</text>
-  <text x="20" y="406" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="12" fill="#888888">the gitlawb official meme · b&amp;w · CC0</text>
+  <text x="240" y="404" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="24" fill="#ffffff">LAWB {°·°}</text>
+  <text x="240" y="424" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="11.5" fill="#888888">the gitlawb official meme</text>
+  <text x="240" y="440" font-family="ui-monospace,Menlo,Consolas,monospace" font-size="11.5" fill="#888888">b&amp;w · mono · CC0</text>
 </svg>
