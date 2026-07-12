@@ -1,0 +1,40 @@
+{
+  "rail": "base-b20-native",
+  "factory": "0xB20f000000000000000000000000000000000000",
+  "call": "createB20",
+  "params": {
+    "variant": "ASSET",
+    "salt": "0x2199f2c9945adb519b850e10dd73754aae4c26de9a3c625e83fda63c23fac5b3",
+    "token": {
+      "name": "LAWB",
+      "symbol": "LAWBM",
+      "decimals": 18,
+      "maxSupply": "0",
+      "image": ""
+    },
+    "roles": {
+      "issuer": "0xAC3ca7c5d3cDD7702fd08F9C4C28dAA22296aDa9",
+      "admin": "0xAC3ca7c5d3cDD7702fd08F9C4C28dAA22296aDa9",
+      "minter": "0xAC3ca7c5d3cDD7702fd08F9C4C28dAA22296aDa9"
+    },
+    "initCalls": [],
+    "memo": "LAWB mirror (non-official) — community design. Fees 100% to issuer. Not the gitlawb official meme."
+  },
+  "fees": {
+    "policy": "100% of any trading/liquidity routing fees flow to the issuer (you). No split.",
+    "honest": "B20 creates no LP and no trading fee by itself. Fee routing requires a hook/router YOU deploy later."
+  },
+  "airdrop": {
+    "channel": "X (Twitter) — your mainstreet-X account",
+    "plan": "post a claim link; recipients EIP-191 sign with their claim wallet; you batch-transfer",
+    "firstDropSize": "1% supply"
+  },
+  "branding": {
+    "official_status": "non-official mirror of community design (LAWB-DESCRIPTOR-phil.json is the gitlawb official meme)",
+    "design_source": "art/clansy-design.png  ·  https://x.com/Clansy314495853/status/2076294553661759710/photo/1"
+  },
+  "chain": "base",
+  "signed": false,
+  "execution": "FORBIDDEN — descriptor only; a HUMAN signs createB20 from their mainstreet wallet. Testnet first.",
+  "grounding": "createB20(variant,salt,params,initCalls) on the native factory 0xB20f…0000; deploy via launch.o1.exchange (B20 launchpad). Testnet first; confirm symbol uniqueness on the launchpad."
+}

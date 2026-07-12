@@ -1,4 +1,14 @@
 node_modules/
 .env
 *.log
-LAWB-DESCRIPTOR-*.json
+# only the OFFICIAL (phil) descriptor is local-only;
+# the mirror descriptor is part of the source
+LAWB-DESCRIPTOR-phil.json
+
+# bridge state — regenerated each run, contains last-seen snapshot
+state/
+
+# secrets — never commit
+*.pem
+*.key
+.env.local

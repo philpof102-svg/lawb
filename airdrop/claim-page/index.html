@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>LAWB mirror — claim</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: light dark; --fg: #111; --bg: #fff; --muted: #666; --acc: #0052ff; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #eee; --bg: #000; --muted: #999; --acc: #4d8bff; } }
+    body { font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; max-width: 540px; margin: 40px auto; padding: 0 16px; color: var(--fg); background: var(--bg); }
+    h1 { font-size: 18px; }
+    code, pre { font-family: inherit; background: rgba(127,127,127,.1); padding: 2px 5px; border-radius: 4px; word-break: break-all; }
+    button { background: var(--acc); color: #fff; border: 0; padding: 10px 16px; border-radius: 6px; cursor: pointer; font: inherit; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .row { margin: 14px 0; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .ok { color: #16a34a; }
+    .err { color: #dc2626; word-break: break-all; }
+    a { color: var(--acc); }
+  </style>
+</head>
+<body>
+  <h1>LAWB mirror — claim</h1>
+  <p class="muted">
+    This is the airdrop claim page for the <strong>non-official LAWB mirror</strong>.
+    Sign in with the wallet you want the airdrop sent to. The signature stays in
+    your browser — we only see your wallet address, your X handle, and the tweet
+    you engaged with. Read the source: it's a single static HTML file.
+  </p>
+
+  <div class="row">
+    <label>X handle<br /><input id="xHandle" placeholder="@your_handle" style="width:100%;padding:8px" /></label>
+  </div>
+  <div class="row">
+    <label>Tweet id you engaged with<br /><input id="tweetId" placeholder="2076294553661759710" style="width:100%;padding:8px" /></label>
+  </div>
+  <div class="row">
+    <button id="sign">Sign in with wallet</button>
+  </div>
+  <div id="out"></div>
+
+  <p class="muted">
+    How it works: we ask your wallet to sign a fixed message. From the signature
+    we recover your address; that address is the one we airdrop to. The signature
+    never leaves your browser. If your wallet is not installed, we cannot
+    airdrop to you.
+  </p>
+
+  <script>
+  // Pure client-side. No fetch, no analytics, no third-party.
+  const $ = (s) => document.querySelector(s);
+  const out = $('#out');
+
+  function show(msg, cls) { out.innerHTML = '<pre class="' + (cls || '') + '">' + msg + '</pre>'; }
+
+  $('#sign').addEventListener('click', async () => {
+    out.textContent = '';
+    const x = $('#xHandle').value.trim().replace(/^@/, '');
+    const tid = $('#tweetId').value.trim();
+    if (!x) return show('X handle required.', 'err');
+    if (!/^\d+$/.test(tid)) return show('Tweet id must be digits.', 'err');
+    if (typeof window.ethereum === 'undefined') return show('No wallet detected. Install MetaMask / Rabby / Coinbase Wallet.', 'err');
+
+    const message = [
+      'LAWB mirror airdrop claim',
+      'X handle: @' + x,
+      'Tweet:    ' + tid,
+      'Issued:   ' + new Date().toISOString().slice(0, 10),
+      'Terms:    non-official community token, no guarantee of value, no expectation of profit',
+    ].join('\n');
+
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const from = accounts[0];
+      const sig = await window.ethereum.request({
+        method: 'personal_sign',
+        params: [message, from],
+      });
+      // The user (or a separate backend you control) takes the JSON below,
+      // verifies the signature off-chain (e.g. ecrecover), and either adds
+      // the wallet to claim-list.json or rejects it.
+      const payload = {
+        xHandle: '@' + x,
+        tweetId: tid,
+        address: from,
+        message,
+        signature: sig,
+        signedAt: new Date().toISOString(),
+      };
+      show(JSON.stringify(payload, null, 2), 'ok');
+      console.log('LAWB claim payload — copy this to your claim-list:', payload);
+    } catch (e) {
+      show('Sign failed: ' + (e && e.message || e), 'err');
+    }
+  });
+  </script>
+</body>
+</html>
